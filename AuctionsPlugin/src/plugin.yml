@@ -1,0 +1,10 @@
+name: Auctions
+main: nl.knokko.auctions.plugin.AuctionsPlugin
+commands:
+  auction:
+    description: start an auction or cancel your auction
+    aliases: [auc]
+    useage: /auc [start/cancel/reload] [amount]
+  bid:
+    description: Do a bid for the current auction
+    useage: /bid <AMOUNT>
