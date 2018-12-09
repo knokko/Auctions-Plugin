@@ -8,6 +8,9 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import nl.knokko.auctions.plugin.command.*;
@@ -36,6 +39,12 @@ public class AuctionsPlugin extends JavaPlugin {
 	private static final String AUCTION_CANCEL_DEFAULT = "&c<PLAYER> &9cancelled the auction.";
 	private static final String AUCTION_END_DEFAULT = "&c<PLAYER> &9Has won the auction with &c<PRICE>!";
 	
+	private static AuctionsPlugin instance;
+	
+	public static AuctionsPlugin getInstance() {
+		return instance;
+	}
+	
 	private File messagesFile;
 	
 	private int auctionTime;
@@ -61,8 +70,25 @@ public class AuctionsPlugin extends JavaPlugin {
 		return queuedTime;
 	}
 	
-	public String getAuctionStartMessage() {
-		return auctionStartMessage;
+	private String getItemName(ItemStack item) {
+		if (item.hasItemMeta()) {
+			ItemMeta meta = item.getItemMeta();
+			if (meta.hasDisplayName()) {
+				if (item.getAmount() > 1)
+					return meta.getDisplayName() + " X " + item.getAmount();
+				else
+					return meta.getDisplayName();
+			}
+		}
+		if (item.getAmount() > 1)
+			return item.getType().name().toLowerCase() + " X " + item.getAmount();
+		else
+			return item.getType().name().toLowerCase();
+	}
+	
+	public String getAuctionStartMessage(Player owner, ItemStack item, int startAmount) {
+		return auctionStartMessage.replaceAll("<PLAYER>", owner.getName()).replaceAll("<ITEM>", getItemName(item))
+				.replaceAll("<PRICE>", startAmount + "");
 	}
 	
 	public String getAuctionQueueMessage() {
@@ -77,8 +103,8 @@ public class AuctionsPlugin extends JavaPlugin {
 		return bidPlacedMessage;
 	}
 	
-	public String getAuctionCancelMessage() {
-		return auctionCancelMessage;
+	public String getAuctionCancelMessage(String playerName) {
+		return auctionCancelMessage.replaceAll("<PLAYER>", playerName);
 	}
 	
 	public String getAuctionEndMessage() {
@@ -87,6 +113,7 @@ public class AuctionsPlugin extends JavaPlugin {
 	
 	@Override
 	public void onEnable() {
+		instance = this;
 		getCommand("auction").setExecutor(new CommandAuction());
 		getCommand("bid").setExecutor(new CommandBid());
 		messagesFile = new File(getDataFolder() + "/messages.yml");
@@ -103,6 +130,11 @@ public class AuctionsPlugin extends JavaPlugin {
 			saveDefaultMessages();
 			saveDefaultConfigValues();
 		}
+	}
+	
+	@Override
+	public void onDisable() {
+		// TODO cancel all auctions
 	}
 	
 	public void reloadConfigAndMessages() {

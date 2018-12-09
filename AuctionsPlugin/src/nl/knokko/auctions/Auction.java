@@ -1,9 +1,10 @@
 package nl.knokko.auctions;
 
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+
+import nl.knokko.auctions.plugin.AuctionsPlugin;
 
 public class Auction {
 	
@@ -21,15 +22,15 @@ public class Auction {
 		amount = initialAmount;
 	}
 	
-	public void takeItem() {
-		owner.getInventory().remove(item);
+	public Player getOwner() {
+		return owner;
 	}
 	
 	public void cancel() {
 		cancelled = true;
 		owner.getInventory().addItem(item);
 		if (isStarted()) {
-			//Bukkit.broadcastMessage(ChatColor.YELLOW + "")
+			Bukkit.broadcastMessage(AuctionsPlugin.getInstance().getAuctionCancelMessage(owner.getName()));
 		}
 	}
 	
@@ -43,5 +44,10 @@ public class Auction {
 	
 	public void start() {
 		startTime = System.currentTimeMillis();
+		Bukkit.broadcastMessage(AuctionsPlugin.getInstance().getAuctionStartMessage(owner, item, amount));
+	}
+	
+	public void update() {
+		
 	}
 }
