@@ -11,8 +11,11 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import net.milkbowl.vault.economy.Economy;
+import nl.knokko.auctions.AuctionManager;
 import nl.knokko.auctions.plugin.command.*;
 
 public class AuctionsPlugin extends JavaPlugin {
@@ -58,6 +61,9 @@ public class AuctionsPlugin extends JavaPlugin {
 	private String auctionCancelMessage;
 	private String auctionEndMessage;
 	
+	private AuctionManager manager;
+	private Economy economy;
+	
 	public int getAuctionTime() {
 		return auctionTime;
 	}
@@ -95,12 +101,12 @@ public class AuctionsPlugin extends JavaPlugin {
 		return auctionQueueMessage;
 	}
 	
-	public String getBidTooLowMessage() {
-		return bidTooLowMessage;
+	public String getBidTooLowMessage(int price) {
+		return bidTooLowMessage.replaceAll("<PRICE>", price + "");
 	}
 	
-	public String getBidPlacedMessage() {
-		return bidPlacedMessage;
+	public String getBidPlacedMessage(Player player, int price) {
+		return bidPlacedMessage.replaceAll("<PLAYER>", player.getName()).replaceAll("<PRICE>", price + "");
 	}
 	
 	public String getAuctionCancelMessage(String playerName) {
@@ -111,9 +117,25 @@ public class AuctionsPlugin extends JavaPlugin {
 		return auctionEndMessage;
 	}
 	
+	public AuctionManager getManager() {
+		return manager;
+	}
+	
+	public Economy getEconomy() {
+		return economy;
+	}
+	
 	@Override
 	public void onEnable() {
 		instance = this;
+		RegisteredServiceProvider<Economy> rsp = getServer().getServicesManager().getRegistration(Economy.class);
+        if (rsp == null) {
+        	Bukkit.getLogger().severe("Can't find Vault plug-in; disabling Auctions...");
+        	Bukkit.getPluginManager().disablePlugin(this);
+            return;
+        }
+        economy = rsp.getProvider();
+		manager = new AuctionManager();
 		getCommand("auction").setExecutor(new CommandAuction());
 		getCommand("bid").setExecutor(new CommandBid());
 		messagesFile = new File(getDataFolder() + "/messages.yml");
@@ -134,7 +156,8 @@ public class AuctionsPlugin extends JavaPlugin {
 	
 	@Override
 	public void onDisable() {
-		// TODO cancel all auctions
+		manager.onQuit();
+		super.onDisable();
 	}
 	
 	public void reloadConfigAndMessages() {

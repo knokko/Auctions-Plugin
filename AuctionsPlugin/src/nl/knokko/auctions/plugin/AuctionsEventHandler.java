@@ -8,6 +8,6 @@ public class AuctionsEventHandler implements Listener {
 	
 	@EventHandler
 	public void onPlayerQuit(PlayerQuitEvent event) {
-		
+		AuctionsPlugin.getInstance().getManager().onDisconnect(event.getPlayer());
 	}
 }
