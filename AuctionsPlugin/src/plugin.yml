@@ -1,5 +1,8 @@
 name: Auctions
 main: nl.knokko.auctions.plugin.AuctionsPlugin
+version: 1.0
+depend: [Vault]
+loadbefore: [Vault]
 commands:
   auction:
     description: start an auction or cancel your auction

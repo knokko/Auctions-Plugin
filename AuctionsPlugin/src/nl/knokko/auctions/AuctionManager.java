@@ -34,7 +34,7 @@ public class AuctionManager {
 	public void update() {
 		if (currentAuction != null) {
 			currentAuction.update();
-			if (currentAuction.isCancelled()) {
+			if (currentAuction.isCancelled() || currentAuction.isFinished()) {
 				currentAuction = null;
 				flushQueue();
 			}

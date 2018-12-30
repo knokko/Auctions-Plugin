@@ -9,8 +9,6 @@ import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -35,12 +33,12 @@ public class AuctionsPlugin extends JavaPlugin {
 	private static final String AUCTION_CANCEL_KEY = "auction-cancel";
 	private static final String AUCTION_END_KEY = "auction-end";
 	
-	private static final String AUCTION_START_DEFAULT = "&c<PLAYER> &9has started the auction.Item &c<ITEM>&9.Type /bid &c<PRICE>";
-	private static final String AUCTION_QUEUE_DEFAULT = "&9Your item has been placed in queue!";
-	private static final String BID_TOO_LOW_DEFAULT = "&9Your bid has to be higher than &c<PRICE>.";
-	private static final String BID_PLACED_DEFAULT = "&c<PLAYER> &9has placed bid &c<PRICE>!";
-	private static final String AUCTION_CANCEL_DEFAULT = "&c<PLAYER> &9cancelled the auction.";
-	private static final String AUCTION_END_DEFAULT = "&c<PLAYER> &9Has won the auction with &c<PRICE>!";
+	private static final String AUCTION_START_DEFAULT = "§c<PLAYER> §9has started the auction.Item §c<ITEM>§9.Type /bid §c<PRICE>";
+	private static final String AUCTION_QUEUE_DEFAULT = "§9Your item has been placed in queue!";
+	private static final String BID_TOO_LOW_DEFAULT = "§9Your bid has to be higher than §c<PRICE>.";
+	private static final String BID_PLACED_DEFAULT = "§c<PLAYER> &9has placed bid §c<PRICE>!";
+	private static final String AUCTION_CANCEL_DEFAULT = "§c<PLAYER> &9cancelled the auction.";
+	private static final String AUCTION_END_DEFAULT = "§c<PLAYER> §9Has won the auction with §c<PRICE>!";
 	
 	private static AuctionsPlugin instance;
 	
@@ -76,25 +74,8 @@ public class AuctionsPlugin extends JavaPlugin {
 		return queuedTime;
 	}
 	
-	private String getItemName(ItemStack item) {
-		if (item.hasItemMeta()) {
-			ItemMeta meta = item.getItemMeta();
-			if (meta.hasDisplayName()) {
-				if (item.getAmount() > 1)
-					return meta.getDisplayName() + " X " + item.getAmount();
-				else
-					return meta.getDisplayName();
-			}
-		}
-		if (item.getAmount() > 1)
-			return item.getType().name().toLowerCase() + " X " + item.getAmount();
-		else
-			return item.getType().name().toLowerCase();
-	}
-	
-	public String getAuctionStartMessage(Player owner, ItemStack item, int startAmount) {
-		return auctionStartMessage.replaceAll("<PLAYER>", owner.getName()).replaceAll("<ITEM>", getItemName(item))
-				.replaceAll("<PRICE>", startAmount + "");
+	public String getAuctionStartMessage(Player owner, int startAmount) {
+		return auctionStartMessage.replaceAll("<PLAYER>", owner.getName()).replaceAll("<PRICE>", startAmount + "");
 	}
 	
 	public String getAuctionQueueMessage() {
@@ -138,6 +119,7 @@ public class AuctionsPlugin extends JavaPlugin {
 		manager = new AuctionManager();
 		getCommand("auction").setExecutor(new CommandAuction());
 		getCommand("bid").setExecutor(new CommandBid());
+		loadConfig();
 		messagesFile = new File(getDataFolder() + "/messages.yml");
 		if (messagesFile.exists()) {
 			loadMessages();
@@ -152,11 +134,17 @@ public class AuctionsPlugin extends JavaPlugin {
 			saveDefaultMessages();
 			saveDefaultConfigValues();
 		}
+		Bukkit.getScheduler().scheduleSyncRepeatingTask(this, () -> {
+			manager.update();
+		}, 40, 10);
 	}
 	
 	@Override
 	public void onDisable() {
-		manager.onQuit();
+		// manager can be null if plug-in is stopping because vault is not found
+		if (manager != null) {
+			manager.onQuit();
+		}
 		super.onDisable();
 	}
 	
