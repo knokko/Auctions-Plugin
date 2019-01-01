@@ -146,7 +146,7 @@ public class Auction {
 	}
 
 	public static String getItemName(ItemStack item) {
-		return CraftItemStack.asNMSCopy(item).getName() + " x" + (item.getAmount() == 1 ? "" : item.getAmount() + "");
+		return CraftItemStack.asNMSCopy(item).getName() + " x" + item.getAmount();
 	}
 
 	public void update() {
