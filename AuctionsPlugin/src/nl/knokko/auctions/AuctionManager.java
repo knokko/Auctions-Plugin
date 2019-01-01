@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
 import nl.knokko.auctions.plugin.AuctionsPlugin;
@@ -28,11 +29,12 @@ public class AuctionManager {
 			currentAuction.start();
 		} else {
 			queuedAuctions.add(auction);
+			auction.getOnlineOwner().sendMessage(AuctionsPlugin.getInstance().getAuctionQueueMessage());
 		}
 	}
 	
 	public void update() {
-		if (currentAuction != null) {
+		if (currentAuction != null && currentAuction.isStarted()) {
 			currentAuction.update();
 			if (currentAuction.isCancelled() || currentAuction.isFinished()) {
 				currentAuction = null;
@@ -66,6 +68,7 @@ public class AuctionManager {
 	private void flushQueue() {
 		if (!queuedAuctions.isEmpty()) {
 			currentAuction = queuedAuctions.remove(0);
+			Bukkit.broadcastMessage(ChatColor.YELLOW + "The next auction will start in " + 20 * AuctionsPlugin.getInstance().getQueuedTime() + " seconds");
 			Bukkit.getScheduler().scheduleSyncDelayedTask(AuctionsPlugin.getInstance(), () -> {
 				currentAuction.start();
 			}, AuctionsPlugin.getInstance().getQueuedTime());
@@ -82,6 +85,16 @@ public class AuctionManager {
 			}
 		}
 		return null;
+	}
+	
+	public void cancelAuction(Auction auction) {
+		auction.cancel();
+		if (currentAuction == auction) {
+			currentAuction = null;
+			flushQueue();
+		} else {
+			queuedAuctions.remove(auction);
+		}
 	}
 	
 	public boolean hasAuction(Player player) {

@@ -19,21 +19,29 @@ public class CommandBid implements CommandExecutor {
 			if (args.length == 1) {
 				try {
 					int amount = Integer.parseInt(args[0]);
+					if (amount <= 0) {
+						sender.sendMessage(ChatColor.RED + "The amount must be greater than 0.");
+						return true;
+					}
 					AuctionsPlugin plugin = AuctionsPlugin.getInstance();
 					Player player = (Player) sender;
 					double available = plugin.getEconomy().getBalance(player);
 					if (available >= amount) {
 						AuctionManager manager = plugin.getManager();
 						Auction current = manager.getCurrentAuction();
-						if (current != null) {
+						if (current != null && current.isStarted()) {
 							if (!player.getUniqueId().equals(current.getOwner().getUniqueId())) {
 								Bid highest = current.getHighestBid();
-								if ((highest != null && amount > highest.getAmount())
-										|| (highest == null && amount >= current.getInitialAmount())) {
-									current.setHighestBid(new Bid(player, amount));
+								if (highest == null || !highest.getBidder().getUniqueId().equals(player.getUniqueId())) {
+									if ((highest != null && amount > highest.getAmount())
+											|| (highest == null && amount >= current.getInitialAmount())) {
+										current.setHighestBid(new Bid(player, amount));
+									} else {
+										player.sendMessage(plugin.getBidTooLowMessage(
+												highest != null ? highest.getAmount() : current.getInitialAmount()));
+									}
 								} else {
-									player.sendMessage(plugin.getBidTooLowMessage(
-											highest != null ? highest.getAmount() : current.getInitialAmount()));
+									player.sendMessage(ChatColor.RED + "You can't bid against yourself.");
 								}
 							} else {
 								player.sendMessage(ChatColor.RED + "You can't bid on your own auction");
@@ -54,6 +62,6 @@ public class CommandBid implements CommandExecutor {
 		} else {
 			sender.sendMessage("Only players can bid");
 		}
-		return false;
+		return true;
 	}
 }

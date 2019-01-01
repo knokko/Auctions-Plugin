@@ -2,13 +2,17 @@ package nl.knokko.auctions.plugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.Player;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -61,6 +65,15 @@ public class AuctionsPlugin extends JavaPlugin {
 	
 	private AuctionManager manager;
 	private Economy economy;
+	private Map<UUID,Location> locationMap;
+	
+	public void setLogoutLocation(UUID id, Location location) {
+		locationMap.put(id, location);
+	}
+	
+	public Location getLogoutLocation(UUID id) {
+		return locationMap.get(id);
+	}
 	
 	public int getAuctionTime() {
 		return auctionTime;
@@ -74,7 +87,7 @@ public class AuctionsPlugin extends JavaPlugin {
 		return queuedTime;
 	}
 	
-	public String getAuctionStartMessage(Player owner, int startAmount) {
+	public String getAuctionStartMessage(OfflinePlayer owner, int startAmount) {
 		return auctionStartMessage.replaceAll("<PLAYER>", owner.getName()).replaceAll("<PRICE>", startAmount + "");
 	}
 	
@@ -86,7 +99,7 @@ public class AuctionsPlugin extends JavaPlugin {
 		return bidTooLowMessage.replaceAll("<PRICE>", price + "");
 	}
 	
-	public String getBidPlacedMessage(Player player, int price) {
+	public String getBidPlacedMessage(OfflinePlayer player, int price) {
 		return bidPlacedMessage.replaceAll("<PLAYER>", player.getName()).replaceAll("<PRICE>", price + "");
 	}
 	
@@ -94,8 +107,8 @@ public class AuctionsPlugin extends JavaPlugin {
 		return auctionCancelMessage.replaceAll("<PLAYER>", playerName);
 	}
 	
-	public String getAuctionEndMessage() {
-		return auctionEndMessage;
+	public String getAuctionEndMessage(OfflinePlayer winner, int price) {
+		return auctionEndMessage.replaceAll("<PLAYER>", winner.getName()).replaceAll("<PRICE>", price + "");
 	}
 	
 	public AuctionManager getManager() {
@@ -109,6 +122,8 @@ public class AuctionsPlugin extends JavaPlugin {
 	@Override
 	public void onEnable() {
 		instance = this;
+		locationMap = new HashMap<UUID,Location>();
+		Bukkit.getPluginManager().registerEvents(new AuctionsEventHandler(), this);
 		RegisteredServiceProvider<Economy> rsp = getServer().getServicesManager().getRegistration(Economy.class);
         if (rsp == null) {
         	Bukkit.getLogger().severe("Can't find Vault plug-in; disabling Auctions...");
@@ -156,13 +171,13 @@ public class AuctionsPlugin extends JavaPlugin {
 	
 	private void loadConfig() {
 		FileConfiguration config = getConfig();
-		auctionTime = loadConfigValue(config, AUCTION_TIME_KEY);
-		cancelTime = loadConfigValue(config, CANCEL_TIME_KEY);
-		queuedTime = loadConfigValue(config, QUEUED_TIME_KEY);
+		auctionTime = loadConfigValue(config, AUCTION_TIME_KEY) * 1000;
+		cancelTime = loadConfigValue(config, CANCEL_TIME_KEY) * 1000;
+		queuedTime = loadConfigValue(config, QUEUED_TIME_KEY) * 20;
 	}
 	
 	private int loadConfigValue(FileConfiguration config, String key) {
-		return config.getInt(key) * 1000;
+		return config.getInt(key);
 	}
 	
 	private void saveDefaultConfigValues() {
